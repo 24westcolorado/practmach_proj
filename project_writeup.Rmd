@@ -16,7 +16,11 @@ In this section we describe the initial dataset, the preprocessing steps that we
 The original dataset has 19,622 samples in the training set with 160 columns.  The last column
 refers to the samples the classe type.  The testing set consisted of 20 samples, but the classe variable was not known.  The first 7 columns consist of simple information: index number, user name, time stamps, and time-window information.  The next 152 columns are features based on measurements from the accelerometers.  These features are calculated over time windows and include types such as average, standard deviation, maximum, x,y,z-components, and kurtosis.  
 
-```{r, cache=TRUE}
+```{r, cache=TRUE, echo=FALSE}
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", 
+              destfile = "pml-training.csv", method="curl")
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", 
+              destfile = "pml-testing.csv", method="curl")
 dat.train <- read.csv("pml-training.csv")
 dat.test  <- read.csv("pml-testing.csv")
 ```

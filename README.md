@@ -17,10 +17,6 @@ The original dataset has 19,622 samples in the training set with 160 columns.  T
 refers to the samples the classe type.  The testing set consisted of 20 samples, but the classe variable was not known.  The first 7 columns consist of simple information: index number, user name, time stamps, and time-window information.  The next 152 columns are features based on measurements from the accelerometers.  These features are calculated over time windows and include types such as average, standard deviation, maximum, x,y,z-components, and kurtosis.  
 
 
-```r
-dat.train <- read.csv("pml-training.csv")
-dat.test  <- read.csv("pml-testing.csv")
-```
 
 ## Preprocessing:
 
@@ -93,85 +89,13 @@ forest algorithm.
 library(caret)
 set.seed(23421197) # Set the random seed
 fitControl <- trainControl(
-    method = "cv",  ## Cross-validation
+    method = "repeatedcv",  ## Repeated Cross-validation
     number = 10,            ## 10 folds 
-    repeats = 1,            ## 1 repitions
-    verboseIter = TRUE)
+    repeats = 3)            ## 2 repitions
 fit <- train(classe ~ .,data = dat.train, 
              method = "rf",
+             tuneGrid = data.frame(mtry = round(seq(2,25,length = 5))),
              trControl = fitControl)
-```
-
-```
-## Loading required package: randomForest
-## randomForest 4.6-7
-## Type rfNews() to see new features/changes/bug fixes.
-```
-
-```
-## + Fold01: mtry= 2 
-## - Fold01: mtry= 2 
-## + Fold01: mtry=13 
-## - Fold01: mtry=13 
-## + Fold01: mtry=25 
-## - Fold01: mtry=25 
-## + Fold02: mtry= 2 
-## - Fold02: mtry= 2 
-## + Fold02: mtry=13 
-## - Fold02: mtry=13 
-## + Fold02: mtry=25 
-## - Fold02: mtry=25 
-## + Fold03: mtry= 2 
-## - Fold03: mtry= 2 
-## + Fold03: mtry=13 
-## - Fold03: mtry=13 
-## + Fold03: mtry=25 
-## - Fold03: mtry=25 
-## + Fold04: mtry= 2 
-## - Fold04: mtry= 2 
-## + Fold04: mtry=13 
-## - Fold04: mtry=13 
-## + Fold04: mtry=25 
-## - Fold04: mtry=25 
-## + Fold05: mtry= 2 
-## - Fold05: mtry= 2 
-## + Fold05: mtry=13 
-## - Fold05: mtry=13 
-## + Fold05: mtry=25 
-## - Fold05: mtry=25 
-## + Fold06: mtry= 2 
-## - Fold06: mtry= 2 
-## + Fold06: mtry=13 
-## - Fold06: mtry=13 
-## + Fold06: mtry=25 
-## - Fold06: mtry=25 
-## + Fold07: mtry= 2 
-## - Fold07: mtry= 2 
-## + Fold07: mtry=13 
-## - Fold07: mtry=13 
-## + Fold07: mtry=25 
-## - Fold07: mtry=25 
-## + Fold08: mtry= 2 
-## - Fold08: mtry= 2 
-## + Fold08: mtry=13 
-## - Fold08: mtry=13 
-## + Fold08: mtry=25 
-## - Fold08: mtry=25 
-## + Fold09: mtry= 2 
-## - Fold09: mtry= 2 
-## + Fold09: mtry=13 
-## - Fold09: mtry=13 
-## + Fold09: mtry=25 
-## - Fold09: mtry=25 
-## + Fold10: mtry= 2 
-## - Fold10: mtry= 2 
-## + Fold10: mtry=13 
-## - Fold10: mtry=13 
-## + Fold10: mtry=25 
-## - Fold10: mtry=25 
-## Aggregating results
-## Selecting tuning parameters
-## Fitting mtry = 2 on full training set
 ```
 
 # Results
@@ -191,7 +115,7 @@ print(fit)
 ##     5 classes: 'A', 'B', 'C', 'D', 'E' 
 ## 
 ## No pre-processing
-## Resampling: Cross-Validated (10 fold) 
+## Resampling: Cross-Validated (10 fold, repeated 3 times) 
 ## 
 ## Summary of sample sizes: 17659, 17660, 17659, 17661, 17659, 17660, ... 
 ## 
@@ -199,7 +123,9 @@ print(fit)
 ## 
 ##   mtry  Accuracy  Kappa  Accuracy SD  Kappa SD
 ##   2     1         1      0.003        0.004   
-##   10    1         1      0.002        0.003   
+##   8     1         1      0.003        0.004   
+##   10    1         1      0.003        0.004   
+##   20    1         1      0.003        0.004   
 ##   20    1         1      0.004        0.005   
 ## 
 ## Accuracy was used to select the optimal model using  the largest value.
@@ -254,25 +180,25 @@ print(varimp.obj)
 ## 
 ##      Overall
 ## PC8    100.0
-## PC14    88.0
-## PC12    85.8
-## PC1     82.6
-## PC5     74.5
-## PC3     68.1
-## PC9     63.2
-## PC6     59.2
-## PC2     57.6
-## PC15    55.6
-## PC21    50.2
-## PC16    48.9
-## PC22    44.1
-## PC7     43.6
-## PC17    43.3
-## PC13    38.4
-## PC10    38.2
-## PC4     37.7
-## PC25    35.3
-## PC20    30.8
+## PC12    90.7
+## PC14    90.0
+## PC1     85.9
+## PC5     72.2
+## PC3     68.8
+## PC9     60.5
+## PC2     59.0
+## PC15    58.2
+## PC6     57.5
+## PC16    49.2
+## PC21    48.6
+## PC17    45.6
+## PC7     43.9
+## PC22    43.4
+## PC10    43.0
+## PC13    40.0
+## PC25    37.4
+## PC4     37.0
+## PC20    31.0
 ```
 
 ```r
