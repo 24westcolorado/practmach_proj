@@ -17,6 +17,14 @@ The original dataset has 19,622 samples in the training set with 160 columns.  T
 refers to the samples the classe type.  The testing set consisted of 20 samples, but the classe variable was not known.  The first 7 columns consist of simple information: index number, user name, time stamps, and time-window information.  The next 152 columns are features based on measurements from the accelerometers.  These features are calculated over time windows and include types such as average, standard deviation, maximum, x,y,z-components, and kurtosis.  
 
 
+```r
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", 
+              destfile = "pml-training.csv", method="curl")
+download.file("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", 
+              destfile = "pml-testing.csv", method="curl")
+dat.train <- read.csv("pml-training.csv")
+dat.test  <- read.csv("pml-testing.csv")
+```
 
 ## Preprocessing:
 
@@ -79,10 +87,10 @@ dat.test <- cbind(
 
 ## Prediction
 
-Use a Random Forest classification algorithm to predict the classes of the 
-of sample from the features.  Train the classification algorithm using 
-10-fold cross-validation with 5 repitions.  Use 10 trees in the random
-forest algorithm.  
+We use a Random Forest classification algorithm to predict the classes of the 
+of sample from the features.  The training if the classification algorithm uses 
+10-fold cross-validation with 5 repitions and varies the variable mtry from 2 to 25.
+Additionally, we vary the number of trees used in the model from 5 to 15.  The caret and rf packages are used for the training and random forest implementation, respectively.  
 
 
 ```r
@@ -91,129 +99,73 @@ set.seed(23421197) # Set the random seed
 fitControl <- trainControl(
     method = "repeatedcv",  ## Repeated Cross-validation
     number = 10,            ## 10 folds 
-    repeats = 3)            ## 2 repitions
-fit <- train(classe ~ .,data = dat.train, 
-             method = "rf",
-             tuneGrid = data.frame(mtry = round(seq(2,25,length = 5))),
-             trControl = fitControl)
+    repeats = 5)            ## 5 repitions
+fit.5  <- train(classe ~ .,data = dat.train, ntree  = 5, 
+             method = "rf", trControl = fitControl,
+             tuneGrid = data.frame(mtry = round(seq(2,25,length = 5))) )
+fit.10 <- train(classe ~ .,data = dat.train,ntree  = 10, 
+             method = "rf", trControl = fitControl,
+             tuneGrid = data.frame(mtry = round(seq(2,25,length = 5))) )
+fit.15 <- train(classe ~ .,data = dat.train,ntree  = 15, 
+             method = "rf", trControl = fitControl,
+             tuneGrid = data.frame(mtry = round(seq(2,25,length = 5))) )
 ```
 
 # Results
 
-In this section we look at the training results and make a plot of a features.  We used a 10-fold Cross-validation training with 5 repititions.  Additionally, we varied the tuning parameter mtry, which is the number of variables randomly sampled at each split, from 2 to 25.  Below is a plot of the fit results.  
-
-
-```r
-print(fit)
-```
-
-```
-## Random Forest 
-## 
-## 19622 samples
-##    25 predictors
-##     5 classes: 'A', 'B', 'C', 'D', 'E' 
-## 
-## No pre-processing
-## Resampling: Cross-Validated (10 fold, repeated 3 times) 
-## 
-## Summary of sample sizes: 17659, 17660, 17659, 17661, 17659, 17660, ... 
-## 
-## Resampling results across tuning parameters:
-## 
-##   mtry  Accuracy  Kappa  Accuracy SD  Kappa SD
-##   2     1         1      0.003        0.004   
-##   8     1         1      0.003        0.004   
-##   10    1         1      0.003        0.004   
-##   20    1         1      0.003        0.004   
-##   20    1         1      0.004        0.005   
-## 
-## Accuracy was used to select the optimal model using  the largest value.
-## The final value used for the model was mtry = 2.
-```
-
-
-```r
-library(ggplot2)
-library(lattice)
-trellis.par.set(caretTheme())
-plot(fit)
-```
-
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-51.png) 
-
-```r
-ggplot(fit)
-```
-
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-52.png) 
-
-The plot shows the average out-of-sample error for each tuning parameter across all the 10-fold and 5-repitions of the data.  We see the best results with a value of mtry = , and expect the testing accuracy to approximately %. 
-
-
-
-Perform the prediction on the testing set
-
-
-```r
-train.pred <- predict(fit,newdata = dat.train)
-test.pred  <- predict(fit,newdata = dat.test)
-train.acc  <- mean(train.pred == dat.train$classe)
-print(train.acc)
-```
-
-```
-## [1] 1
-```
+In this section we look at the training results and make a plot of a features.  We plot the accuracies versus the mtry, which is the number of variables randomly sampled at each split, and we also have a separate plot for each choose of the number of trees that we used.
 
 
 ```r
 library(caret)
-varimp.obj <- varImp(fit,scale = TRUE)
-print(varimp.obj)
 ```
 
 ```
-## rf variable importance
-## 
-##   only 20 most important variables shown (out of 25)
-## 
-##      Overall
-## PC8    100.0
-## PC12    90.7
-## PC14    90.0
-## PC1     85.9
-## PC5     72.2
-## PC3     68.8
-## PC9     60.5
-## PC2     59.0
-## PC15    58.2
-## PC6     57.5
-## PC16    49.2
-## PC21    48.6
-## PC17    45.6
-## PC7     43.9
-## PC22    43.4
-## PC10    43.0
-## PC13    40.0
-## PC25    37.4
-## PC4     37.0
-## PC20    31.0
+## Loading required package: lattice
+## Loading required package: ggplot2
 ```
 
 ```r
-colnames(varimp.obj)
+library(ggplot2)
+fit.res <- rbind(
+    cbind(fit.5$results,  ntree = 5),
+    cbind(fit.10$results, ntree = 10))
+fit.res <- rbind(
+    fit.res,      
+    cbind(fit.15$results, ntree = 15))
+fit.res$ntree <- as.factor(fit.res$ntree)
+p <- ggplot(fit.res, aes(x = mtry, y = Accuracy, color = ntree))
+p + geom_line()
+```
+
+![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4.png) 
+
+The plot shows the average out-of-sample accuracy for each tuning parameter across all the 10-fold and 5-repitions of the data for 5, 10, and 15 trees.  We see the best results with a value of mtry equal to 8 and the number of trees being 15.  The expected testing accuracy, i.e. the average out-of-sample accuracy is 96.8%. 
+
+Next we look at the importance of the variables in random forest algorithm.  The importance factor scaled to 100 is plotted below.  We see a smooth decrease from the most important to the least.  That is, it appears that most of these variables are actually necessary to classify the results.  
+
+```r
+varimp.obj <- varImp(fit.15,scale = TRUE)
 ```
 
 ```
-## NULL
+## Loading required package: randomForest
+## randomForest 4.6-7
+## Type rfNews() to see new features/changes/bug fixes.
 ```
 
 ```r
-bst.ind <- order(varimp.obj$importance$Overall, decreasing = TRUE)
+plot(varimp.obj)
+```
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5.png) 
+
+```r
+bst.ind <- order(varimp.obj$importance,decreasing = TRUE)
 bst.ind <- bst.ind[1:5]
 ```
 
+Next, we perform a pair-wise plot depicting the relations between the first 5 most important variables.  This plot confirms that the classificaiton is non-trivial and most, if not all, of the variables are necessary to classify the data.  This is because we do not see any clear separation between the features from the 5 most important variables.  
 
 ```r
 smp.ind <- sample(dim(dat.train)[1], size=1000,replace=F)
@@ -224,24 +176,6 @@ featurePlot(x = dat.train[smp.ind, bst.ind],
             auto.key = list(columns = 3))
 ```
 
-![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8.png) 
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6.png) 
 
-
-```r
-preProc <- preProcess(dat.train[,2:(dim(dat.train)[2]-1)],method="pca", thresh = 0.95 )
-    #     # Record the total number of features and the number needed to explain
-    #     # 99% of the variance
-print(preProc)
-```
-
-```
-## 
-## Call:
-## preProcess.default(x = dat.train[, 2:(dim(dat.train)[2] - 1)], method
-##  = "pca", thresh = 0.95)
-## 
-## Created from 19622 samples and 24 variables
-## Pre-processing: principal component signal extraction, scaled, centered 
-## 
-## PCA needed 23 components to capture 95 percent of the variance
-```
+In conclusion, it appears that machine learning techniques, specifically random forests, can perform quite well in determining if one does a barbell exercise correctly.  Although, the implemented method does not give much intuitive information about what aspects of the features differentiate the classes.
